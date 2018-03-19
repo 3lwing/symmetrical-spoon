@@ -1,0 +1,96 @@
+#!/bin/sh
+#================================================================
+# HEADER
+#================================================================
+#% SYNOPSIS
+#+    ${SCRIPT_NAME} [-h] [-u]...
+#%
+#% DESCRIPTION
+#%    Doing those boring every day things. Running without flags will default to --everything
+#%
+#% OPTIONS
+#%    -h, --help                                Print this help
+#%    -u, --update                              Clear docker containers and update everything
+#================================================================
+# END_OF_HEADER
+#================================================================
+
+SCRIPT_HEADSIZE=$(head -200 ${0} |grep -n "^# END_OF_HEADER" | cut -f1 -d:)
+SCRIPT_NAME="$(basename ${0})"
+GREEN='\033[0;32m'
+RED='\033[0;31m'
+NC='\033[0m' # No Color
+PATH_TO_ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+TERMINAL_APP="Terminal"
+VERSION="v0.1.0"
+NPM_PREFIX=$(npm config get prefix)
+REPOS=("api-gateway" "content-api" "user-api" "push-api" "babel-app" "arch-cms")
+
+function help_menu {
+    head -${SCRIPT_HEADSIZE:-99} ${0} | grep -e "^#[%+-]" | sed -e "s/^#[%+-]//g" -e "s/\${SCRIPT_NAME}/${SCRIPT_NAME}/g" ;
+}
+
+function send_to_staging {
+    #cd "${PATH_TO_ROOT}/${1}/"
+    echo "    Update ${1}"
+    if [ -d ".git" ]
+    then
+        git status
+        git tag -a  ${VERSION} -m "Sprint release ${VERSION}"
+        git push origin ${VERSION} 
+        #git checkout master
+        #git pull
+        #git checkout beta
+        #git pull
+    else
+        echo "${RED}Skipping because it doesn't look like it has a .git folder. ${NC}"
+    fi
+}
+function do_update {
+    cd "${PATH_TO_ROOT}"
+    echo "  ${GREEN}✓${NC} Get everything from api"
+    # Add new stuff
+    for i in "${REPOS[@]}"
+    do
+    : 
+    # do whatever on $i
+        send_to_staging $i
+    done
+
+    #reset
+    cd "${PATH_TO_ROOT}"
+}
+
+echo "Starting update at: $(date +"%T")"
+
+if [ $# -eq 0 ]
+then
+    #do_update
+    send_to_staging "test 1"
+fi
+
+while [ ! $# -eq 0 ]
+do
+    case "$1" in
+        --help | -h)
+            help_menu
+            ;;
+        --update | -u)
+            do_update
+            ;;
+        --api | -a)
+            update_api
+            ;;
+        --api-restart | -ar)
+            ./run -dc
+            update_api
+            ./run -ds
+            ;;
+        --frontend | -f)
+            update_frontend
+            ;;
+    esac
+    shift
+done
+
+echo "Done updating at: $(date +"%T")"
