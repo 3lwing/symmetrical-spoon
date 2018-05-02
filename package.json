@@ -1,6 +1,6 @@
 {
   "name": "symmetrical-spoon",
-  "version": "0.2.23",
+  "version": "0.2.24",
   "description": "A very spoony example project, now with added description and no more confusion. Or is it really so?",
   "main": "index.js",
   "scripts": {
